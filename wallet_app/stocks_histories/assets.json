@@ -1,0 +1,36 @@
+{
+    "assets": [
+        {
+            "short_name": "Genfit S.A",
+            "name": "Genfit SA",
+            "ticker": "GNFT.PA",
+            "broker": "XTB",
+            "devise": "EUR",
+            "orders": [
+                {
+                    "date": "2024-01-22",
+                    "quantity": 30.0,
+                    "price": 3.0
+                }
+            ],
+            "dates": [],
+            "closes": []
+        },
+        {
+            "short_name": "Apple Inc.",
+            "name": "Apple Inc.",
+            "ticker": "AAPL",
+            "broker": "xtb",
+            "devise": "usd",
+            "orders": [
+                {
+                    "date": "2024-01-29",
+                    "quantity": 1.0,
+                    "price": 100.0
+                }
+            ],
+            "dates": [],
+            "closes": []
+        }
+    ]
+}

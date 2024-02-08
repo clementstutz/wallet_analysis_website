@@ -1,0 +1,89 @@
+<!-- view_assets.html -->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>View assets</title>
+</head>
+<body>
+    <a href="{{ url_for('index') }}">Accueil</a>
+    <h1>Adding an asset</h1>
+    <form action="{{ url_for('view_assets') }}" method="post">
+        <label for="ticker">Ticker:</label>
+        <input type="text" id="ticker" name="ticker" placeholder="APPL" required>
+        
+        <button type="submit">Rechercher</button>
+    </form>
+
+    {% if search_result %}
+        <div>
+            <h2>Résultat de la recherche</h2>
+            <p>Name: {{ search_result.longName }}</p>
+            <p>Sector: {{ search_result.sector }}</p>
+            <p>Country: {{ search_result.country }}</p>
+            <p>Last Price: {{ search_result.currentPrice }}</p>
+
+            <h2>Add Asset</h2>
+            <form action="{{ url_for('add_asset') }}" method="post">
+                <input type="hidden" name="short_name" value="{{ search_result.shortName }}">
+                <input type="hidden" name="name" value="{{ search_result.longName }}">
+                <input type="hidden" name="ticker" value="{{ search_result.symbol }}">
+                <label for="broker">Broker:</label>
+                <input type="text" id="broker" name="broker" placeholder="Your Broker" required>
+                <label for="devise">Devise:</label>
+                <input type="text" id="devise" name="devise" placeholder="Currency" required>
+
+                <h3>Orders</h3>
+                <div id="order-form">
+                    <label for="order_date">Order Date:</label>
+                    <input type="date" id="order_date" name="order_date" required>
+                    <label for="order_quantity">Order Quantity:</label>
+                    <input type="text" id="order_quantity" name="order_quantity" required>
+                    <label for="order_price">Order Price:</label>
+                    <input type="text" id="order_price" name="order_price" required>
+                </div>
+                <button type="button" onclick="addOrder()">Add Order</button>
+                <br>
+                <button type="submit">Add Asset</button>
+            </form>
+        </div>
+    {% endif %}
+
+    <h1>Assets in your wallet</h1>
+    <table border="1">
+        <thead>
+            <tr>
+                {% for key in assets.assets[0].to_dict() if key not in ['orders', 'dates', 'closes'] %}
+                    <th>{{ key }}</th>
+                {% endfor %}
+            </tr>
+        </thead>
+        <tbody>
+            {% for asset in assets.assets %}
+                <tr>
+                    {% for key, value in asset.to_dict().items() if key not in ['orders', 'dates', 'closes'] %}
+                        <td>{{ value }}</td>
+                    {% endfor %}
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <script>
+        function addOrder() {
+            var orderForm = document.getElementById('order-form');
+            var newOrderDiv = document.createElement('div');
+            newOrderDiv.innerHTML = '<label for="order_date">Order Date:</label>' +
+                                    '<input type="date" id="order_date" name="order_date" required>' +
+                                    '<label for="order_quantity">Order Quantity:</label>' +
+                                    '<input type="text" id="order_quantity" name="order_quantity" required>' +
+                                    '<label for="order_price">Order Price:</label>' +
+                                    '<input type="text" id="order_price" name="order_price" required>';
+            orderForm.appendChild(newOrderDiv);
+        }
+    </script>
+    
+</body>
+</html>
