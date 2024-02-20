@@ -14,8 +14,8 @@ function display_wallet_nvd3_graph(data) {
             return new Date(date);
         });
 
-        var closeData = wallet["valuation"].map(function(close, index) {
-            return [wallet["dates"][index], close];
+        var closeData = wallet["valuation"].map(function(valuation, index) {
+            return [wallet["dates"][index], valuation];
         });
 
         stockData.push({

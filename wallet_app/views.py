@@ -5,7 +5,8 @@ from flask import Flask, jsonify, redirect, render_template, request, session, u
 import requests
 import yfinance as yf
 from .models import save_data_to_database
-from .download_history import FILENAME_SUFIX, Asset, Assets, Order, Wallet, download_histories, get_dates, get_wallet_valuation, load_histories, load_one_history, rebuild_assets_structure
+from portfolio_tracking.download_history_prices import Wallet, get_wallet_valuation
+from portfolio_tracking.yfinance_interface import FILENAME_SUFIX, Asset, Assets, Order, download_histories, load_histories, load_history, rebuild_assets_structure
 from wallet_app.models import init_db
 
 
@@ -129,9 +130,8 @@ def wallet():
                                  save_dir=save_dir,
                                  filename_sufix=filename_sufix)
 
-    dates = get_dates(loaded_data)
-    wallet1 = Wallet(dates)
-    wallet2 = get_wallet_valuation(wallet1, loaded_data)
+    wallet1 = Wallet(assets)
+    wallet2 = get_wallet_valuation(wallet1)
     
     return jsonify({
       'status': 'ok', 
@@ -143,7 +143,7 @@ def stock():
     assets = load_assets_json_file()
     save_dir = STOCKS_HISTORIES_DIR
     filename_sufix = FILENAME_SUFIX
-    loaded_data = load_one_history(asset=assets.assets[0],
+    loaded_data = load_history(asset=assets.assets[0],
                                    save_dir=save_dir,
                                    filename_sufix=filename_sufix)
 
