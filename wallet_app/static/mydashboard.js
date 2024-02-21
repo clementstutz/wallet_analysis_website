@@ -1,9 +1,9 @@
 // Palette de couleurs utilisée par tous les graphiques
 var colors = ["#1D507A", "#2F6999", "#66A0D1", "#8FC0E9", "#4682B4"];
 
-d3.json('/api/wallet', display_wallet_nvd3_graph);
+d3.json('/api/wallet/valuation', display_wallet_valuation_nvd3_graph);
 
-function display_wallet_nvd3_graph(data) {
+function display_wallet_valuation_nvd3_graph(data) {
     if (data["status"] == "ok") {
         var wallet = data["data"];
         var stockData = [];
@@ -69,7 +69,7 @@ function display_wallet_nvd3_graph(data) {
                 .showMaxMin(false)
                 .ticks(false);
 
-            d3.select('#wallet svg')
+            d3.select('#wallet_valuation svg')
                 .datum(stockData)
                 .call(chart);
 
@@ -78,6 +78,165 @@ function display_wallet_nvd3_graph(data) {
         });
     }
 }
+
+
+d3.json('/api/wallet/share_value', display_wallet_share_value_nvd3_graph);
+
+function display_wallet_share_value_nvd3_graph(data) {
+    if (data["status"] == "ok") {
+        var wallet = data["data"];
+        var stockData = [];
+        console.log('wallet =\n', wallet)
+
+        // Convertir les dates au format correct pour NVD3
+        wallet["dates"] = wallet["dates"].map(function(date) {
+            return new Date(date);
+        });
+
+        var closeData = wallet["share_value"].map(function(share_value, index) {
+            return [wallet["dates"][index], share_value];
+        });
+
+        stockData.push({
+            key: "wallet share_value",
+            values: closeData
+        });
+        
+        // Obtenir la valeur maximale de toutes les données
+        var maxValue = d3.max(stockData, function(d) {
+            return d3.max(d.values, function(v) {
+                return v[1];
+            });
+        });
+
+        // Ajouter le décalage (10%)
+        var yMax = maxValue * 1.1;
+
+        nv.addGraph(function() {
+            var chart = nv.models.lineWithFocusChart()
+                .x(function(d) {
+                    return d[0];
+                })
+                .y(function(d) {
+                    return d[1];
+                })
+                .yDomain([0, yMax])
+                .height(270)
+                .color(colors);
+
+            chart.brushExtent([new Date(wallet["dates"][0]), new Date(wallet["dates"][0] + 24 * 3600 * 1000)]);
+
+            chart.xAxis
+                .showMaxMin(false)
+                .tickFormat(function(d) {
+                    return d3.time.format('%d/%m/%y')(new Date(d));
+                });
+
+            chart.x2Axis
+                .showMaxMin(false)
+                .tickFormat(function(d) {
+                    return d3.time.format('%d/%m/%y')(new Date(d));
+                });
+
+            chart.yAxis
+                .showMaxMin(false)
+                .axisLabel('Close Price')
+                .tickFormat(d3.format('.2f'))
+                .domain([0, yMax]);  // Définir le domaine de l'axe y
+
+            chart.y2Axis
+                .showMaxMin(false)
+                .ticks(false);
+
+            d3.select('#wallet_share_value svg')
+                .datum(stockData)
+                .call(chart);
+
+            nv.utils.windowResize(chart.update);
+            return chart;
+        });
+    }
+}
+
+
+d3.json('/api/wallet/share_value_2', display_wallet_share_value_2_nvd3_graph);
+
+function display_wallet_share_value_2_nvd3_graph(data) {
+    if (data["status"] == "ok") {
+        var wallet = data["data"];
+        var stockData = [];
+        console.log('wallet =\n', wallet)
+
+        // Convertir les dates au format correct pour NVD3
+        wallet["dates"] = wallet["dates"].map(function(date) {
+            return new Date(date);
+        });
+
+        var closeData = wallet["share_value_2"].map(function(share_value_2, index) {
+            return [wallet["dates"][index], share_value_2];
+        });
+
+        stockData.push({
+            key: "wallet share_value_2",
+            values: closeData
+        });
+        
+        // Obtenir la valeur maximale de toutes les données
+        var maxValue = d3.max(stockData, function(d) {
+            return d3.max(d.values, function(v) {
+                return v[1];
+            });
+        });
+
+        // Ajouter le décalage (10%)
+        var yMax = maxValue * 1.1;
+
+        nv.addGraph(function() {
+            var chart = nv.models.lineWithFocusChart()
+                .x(function(d) {
+                    return d[0];
+                })
+                .y(function(d) {
+                    return d[1];
+                })
+                .yDomain([0, yMax])
+                .height(270)
+                .color(colors);
+
+            chart.brushExtent([new Date(wallet["dates"][0]), new Date(wallet["dates"][0] + 24 * 3600 * 1000)]);
+
+            chart.xAxis
+                .showMaxMin(false)
+                .tickFormat(function(d) {
+                    return d3.time.format('%d/%m/%y')(new Date(d));
+                });
+
+            chart.x2Axis
+                .showMaxMin(false)
+                .tickFormat(function(d) {
+                    return d3.time.format('%d/%m/%y')(new Date(d));
+                });
+
+            chart.yAxis
+                .showMaxMin(false)
+                .axisLabel('Close Price')
+                .tickFormat(d3.format('.2f'))
+                .domain([0, yMax]);  // Définir le domaine de l'axe y
+
+            chart.y2Axis
+                .showMaxMin(false)
+                .ticks(false);
+
+            d3.select('#wallet_share_value_2 svg')
+                .datum(stockData)
+                .call(chart);
+
+            nv.utils.windowResize(chart.update);
+            return chart;
+        });
+    }
+}
+
 
 d3.json('/api/stock', display_stock_nvd3_graph);
 

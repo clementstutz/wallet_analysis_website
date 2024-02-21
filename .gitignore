@@ -2,3 +2,4 @@
 .vscode
 portfolio_tracking
 finance_data.db
+__pycache__

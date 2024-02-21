@@ -5,8 +5,8 @@ from flask import Flask, jsonify, redirect, render_template, request, session, u
 import requests
 import yfinance as yf
 from .models import save_data_to_database
-from portfolio_tracking.download_history_prices import Wallet, get_wallet_valuation
-from portfolio_tracking.yfinance_interface import FILENAME_SUFIX, Asset, Assets, Order, download_histories, load_histories, load_history, rebuild_assets_structure
+from portfolio_tracking.download_history_prices import Wallet
+from portfolio_tracking.yfinance_interface import FILENAME_SUFIX, Asset, Assets, Order, rebuild_assets_structure
 from wallet_app.models import init_db
 
 
@@ -17,7 +17,7 @@ else:  # URL avec clé :
     METEO_API_URL = "https://api.openweathermap.org/data/2.5/forecast?lat=48.883587&lon=2.333779&appid=" + METEO_API_KEY
 
 STOCKS_HISTORIES_DIR = Path(__file__).parent / "stocks_histories"
-ASSETS_JSON_FILENAME = "assets.json"
+ASSETS_JSON_FILENAME = "real_assets.json"
 
 app = Flask(__name__)
 app.secret_key = "your_secret_key"  #La clé secrète permet de s'assurer que les données stockées dans les cookies ne sont pas altérées par des tiers.
@@ -29,7 +29,7 @@ app.config.from_object("config")
 # Initialiser la base de données avec l'application Flask
 init_db(app)
 
-def load_assets_json_file():
+def load_assets_json_file() -> Assets:
     """Charge les actifs depuis le fichier JSON
     et reconstruit l'arboressence en respectant les classes de chaque objet"""
     assets_jsonfile = STOCKS_HISTORIES_DIR / ASSETS_JSON_FILENAME
@@ -112,44 +112,78 @@ def dashboard_wallet():
         save_dir = STOCKS_HISTORIES_DIR
         filename_sufix = FILENAME_SUFIX
         interval = "1d"
-        download_histories(assets=assets,
-                           end_date=end_date,
-                           save_dir=save_dir,
-                           filename_sufix=filename_sufix,
-                           interval=interval)
+        assets.download_histories(end_date=end_date,
+                                  save_dir=save_dir,
+                                  filename_sufix=filename_sufix,
+                                  interval=interval)
 
         return render_template("dashboard_wallet.html")
 
 
-@app.route('/api/wallet/')
-def wallet():
+@app.route('/api/wallet/valuation')
+def wallet_valuation():
     assets = load_assets_json_file()
     save_dir = STOCKS_HISTORIES_DIR
     filename_sufix = FILENAME_SUFIX
-    loaded_data = load_histories(assets=assets,
-                                 save_dir=save_dir,
-                                 filename_sufix=filename_sufix)
+    assets.load_histories(save_dir=save_dir,
+                          filename_sufix=filename_sufix)
 
-    wallet1 = Wallet(assets)
-    wallet2 = get_wallet_valuation(wallet1)
-    
+    wallet = Wallet(assets)
+    wallet.get_wallet_valuation()
+
     return jsonify({
       'status': 'ok', 
-      'data': wallet2.to_dict()
+      'data': wallet.to_dict()
     })
+
+
+@app.route('/api/wallet/share_value')
+def wallet_share_value():
+    assets = load_assets_json_file()
+    save_dir = STOCKS_HISTORIES_DIR
+    filename_sufix = FILENAME_SUFIX
+    assets.load_histories(save_dir=save_dir,
+                          filename_sufix=filename_sufix)
+
+    wallet = Wallet(assets)
+    wallet.get_wallet_valuation()
+    wallet.get_wallet_share_value()
+
+    return jsonify({
+      'status': 'ok', 
+      'data': wallet.to_dict()
+    })
+
+
+@app.route('/api/wallet/share_value_2')
+def wallet_share_value_2():
+    assets = load_assets_json_file()
+    save_dir = STOCKS_HISTORIES_DIR
+    filename_sufix = FILENAME_SUFIX
+    assets.load_histories(save_dir=save_dir,
+                          filename_sufix=filename_sufix)
+
+    wallet = Wallet(assets)
+    wallet.get_wallet_valuation()
+    wallet.get_wallet_share_value_2()
+
+    return jsonify({
+      'status': 'ok', 
+      'data': wallet.to_dict()
+    })
+
 
 @app.route('/api/stock/')
 def stock():
     assets = load_assets_json_file()
     save_dir = STOCKS_HISTORIES_DIR
     filename_sufix = FILENAME_SUFIX
-    loaded_data = load_history(asset=assets.assets[0],
-                                   save_dir=save_dir,
-                                   filename_sufix=filename_sufix)
+    assets.assets[0].load_history(save_dir=save_dir,
+                                  filename_sufix=filename_sufix)
 
     return jsonify({
       'status': 'ok', 
-      'data': loaded_data.to_dict()
+      'data': assets.assets[0].to_dict()
     })
 
 
