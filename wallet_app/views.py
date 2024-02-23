@@ -5,7 +5,7 @@ from flask import Flask, jsonify, redirect, render_template, request, session, u
 import requests
 import yfinance as yf
 from .models import save_data_to_database
-from portfolio_tracking.download_history_prices import Wallet
+from portfolio_tracking.wallet_data import Wallet
 from portfolio_tracking.yfinance_interface import FILENAME_SUFIX, Asset, Assets, Order, rebuild_assets_structure
 from wallet_app.models import init_db
 
@@ -120,6 +120,28 @@ def dashboard_wallet():
         return render_template("dashboard_wallet.html")
 
 
+@app.route('/api/wallet/1')
+def wallet():
+    assets = load_assets_json_file()
+    save_dir = STOCKS_HISTORIES_DIR
+    filename_sufix = FILENAME_SUFIX
+    assets.load_histories(save_dir=save_dir,
+                          filename_sufix=filename_sufix)
+
+    wallet = Wallet(assets)
+    share_value = wallet.get_wallet_share_value(wallet.dates[0], wallet.dates[-1])
+    share_value_2, _ = wallet.get_wallet_share_value_2(wallet.dates[0], wallet.dates[-1])
+    twrr_cumulated, dates, _ = wallet.get_wallet_TWRR(wallet.dates[0], wallet.dates[-1])
+    
+    return jsonify({
+      'status': 'ok', 
+      'wallet': wallet.to_dict(),
+      'share_value': share_value,
+      'share_value_2': share_value_2,
+      'twrr_cumulated': twrr_cumulated,
+    })
+
+
 @app.route('/api/wallet/valuation')
 def wallet_valuation():
     assets = load_assets_json_file()
@@ -133,7 +155,7 @@ def wallet_valuation():
 
     return jsonify({
       'status': 'ok', 
-      'data': wallet.to_dict()
+      'wallet': wallet.to_dict(),
     })
 
 
@@ -146,12 +168,12 @@ def wallet_share_value():
                           filename_sufix=filename_sufix)
 
     wallet = Wallet(assets)
-    wallet.get_wallet_valuation()
-    wallet.get_wallet_share_value()
+    share_value = wallet.get_wallet_share_value(wallet.dates[0], wallet.dates[-1])
 
     return jsonify({
       'status': 'ok', 
-      'data': wallet.to_dict()
+      'wallet': wallet.to_dict(),
+      'share_value': share_value,
     })
 
 
@@ -164,12 +186,33 @@ def wallet_share_value_2():
                           filename_sufix=filename_sufix)
 
     wallet = Wallet(assets)
-    wallet.get_wallet_valuation()
-    wallet.get_wallet_share_value_2()
+    share_value_2, share_number_2 = wallet.get_wallet_share_value_2(wallet.dates[0], wallet.dates[-1])
 
     return jsonify({
       'status': 'ok', 
-      'data': wallet.to_dict()
+      'wallet': wallet.to_dict(),
+      'share_value_2': share_value_2,
+      'share_number_2': share_number_2,
+    })
+
+
+@app.route('/api/wallet/TWRR')
+def wallet_TWRR():
+    assets = load_assets_json_file()
+    save_dir = STOCKS_HISTORIES_DIR
+    filename_sufix = FILENAME_SUFIX
+    assets.load_histories(save_dir=save_dir,
+                          filename_sufix=filename_sufix)
+
+    wallet = Wallet(assets)
+    start_date = "2020-07-09"
+    end_date = wallet.dates[-1]
+    twrr_cumulated, dates, _ = wallet.get_wallet_TWRR(wallet.dates[wallet.dates.index(start_date)], wallet.dates[wallet.dates.index(end_date)])
+
+    return jsonify({
+      'status': 'ok', 
+      'dates': dates,
+      'twrr_cumulated': twrr_cumulated,
     })
 
 
@@ -183,7 +226,7 @@ def stock():
 
     return jsonify({
       'status': 'ok', 
-      'data': assets.assets[0].to_dict()
+      'asset': assets.assets[0].to_dict()
     })
 
 
