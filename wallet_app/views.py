@@ -2,19 +2,12 @@ from datetime import date
 import json
 from pathlib import Path
 from flask import Flask, jsonify, redirect, render_template, request, session, url_for
-import requests
 import yfinance as yf
 from .models import save_data_to_database
 from portfolio_tracking.wallet_data import Wallet
 from portfolio_tracking.yfinance_interface import FILENAME_SUFIX, Asset, Assets, Order, rebuild_assets_structure
 from wallet_app.models import init_db
 
-
-METEO_API_KEY = "a228411bf5cf1f6ff4a80b45e9b5b065"  # clé OPENWEATHERMAP
-if METEO_API_KEY is None:  # URL de test :
-    METEO_API_URL = "https://samples.openweathermap.org/data/2.5/forecast?lat=0&lon=0&appid=xxx"
-else:  # URL avec clé :
-    METEO_API_URL = "https://api.openweathermap.org/data/2.5/forecast?lat=48.883587&lon=2.333779&appid=" + METEO_API_KEY
 
 STOCKS_HISTORIES_DIR = Path(__file__).parent / "stocks_histories"
 ASSETS_JSON_FILENAME = "assets.json"
@@ -228,39 +221,6 @@ def stock():
       'status': 'ok', 
       'asset': assets.assets[0].to_dict()
     })
-
-
-
-
-
-
-# @app.route('/dashboard_meteo/')
-# def dashboard_meteo():
-#         return render_template("dashboard_meteo.html")
-
-
-# @app.route('/api/meteo/')
-# def meteo():
-#     response = requests.get(METEO_API_URL)
-#     content = json.loads(response.content.decode('utf-8'))
-
-#     if response.status_code != 200:
-#         return jsonify({
-#             'status': 'error',
-#             'message': 'La requête à l\'API météo n\'a pas fonctionné. Voici le message renvoyé par l\'API : {}'.format(content['message'])
-#         }), 500
-    
-#     data = [] # On initialise une liste vide
-#     for prev in content["list"]:
-#         datetime = prev['dt'] * 1000
-#         temperature = prev['main']['temp'] - 273.15 # Conversion de Kelvin en °c
-#         temperature = round(temperature, 2)
-#         data.append([datetime, temperature])
-    
-#     return jsonify({
-#       'status': 'ok', 
-#       'data': data
-#     })
 
 
 if __name__ == "__main__":
