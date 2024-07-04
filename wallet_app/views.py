@@ -17,7 +17,7 @@ else:  # URL avec clé :
     METEO_API_URL = "https://api.openweathermap.org/data/2.5/forecast?lat=48.883587&lon=2.333779&appid=" + METEO_API_KEY
 
 STOCKS_HISTORIES_DIR = Path(__file__).parent / "stocks_histories"
-ASSETS_JSON_FILENAME = "real_assets.json"
+ASSETS_JSON_FILENAME = "assets.json"
 
 app = Flask(__name__)
 app.secret_key = "your_secret_key"  #La clé secrète permet de s'assurer que les données stockées dans les cookies ne sont pas altérées par des tiers.
