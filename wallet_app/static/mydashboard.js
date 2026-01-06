@@ -3,6 +3,51 @@ var colors = ['#1D507A', '#2F6999', '#66A0D1', '#8FC0E9', '#4682B4'];
 
 d3.json('/api/wallet/1', display_wallet_nvd3_graph);
 
+
+// Fonction pour ajouter les années disponibles dans le menu déroulant
+function populateYearSelector() {
+    var startYear = 2020;  // Définissez ici l'année de début
+    var endYear = new Date().getFullYear();  // L'année en cours
+
+    var yearSelect = document.getElementById('year');
+    for (var year = startYear; year <= endYear; year++) {
+        var option = document.createElement('option');
+        option.value = year;
+        option.text = year;
+        yearSelect.appendChild(option);
+    }
+
+    // Événement pour mettre à jour les graphiques lorsque l'année change
+    yearSelect.addEventListener('change', function() {
+        var selectedYear = this.value;
+        updateChartsForYear(selectedYear);
+    });
+
+    // Initialisation avec l'année actuelle
+    yearSelect.value = endYear;
+    updateChartsForYear(endYear);
+}
+
+
+// Fonction pour mettre à jour les graphiques pour une année donnée
+function updateChartsForYear(year) {
+    var startDate = `${year}-01-01`;
+    var endDate = `${year}-12-31`;
+
+    d3.json(`/api/wallet?start=${startDate}&end=${endDate}`, display_wallet_nvd3_graph);
+    d3.json(`/api/wallet/valuation?start=${startDate}&end=${endDate}`, display_wallet_valuation_nvd3_graph);
+    d3.json(`/api/wallet/share_value?start=${startDate}&end=${endDate}`, display_wallet_share_value_nvd3_graph);
+    d3.json(`/api/wallet/share_value_2?start=${startDate}&end=${endDate}`, display_wallet_share_value_2_nvd3_graph);
+    d3.json(`/api/wallet/TWRR?start=${startDate}&end=${endDate}`, display_wallet_twrr_cumulated_nvd3_graph);
+    d3.json(`/api/stock?start=${startDate}&end=${endDate}`, display_stock_nvd3_graph);
+}
+
+// Fonction d'initialisation
+document.addEventListener('DOMContentLoaded', function() {
+    populateYearSelector();
+});
+
+
 function display_wallet_nvd3_graph(datas) {
     if (datas['status'] == 'ok') {
         var wallet = datas['wallet'];

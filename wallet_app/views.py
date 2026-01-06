@@ -1,16 +1,17 @@
-from datetime import date
+import datetime
+import pandas as pd
 import json
 from pathlib import Path
 from flask import Flask, jsonify, redirect, render_template, request, session, url_for
 import yfinance as yf
 from .models import save_data_to_database
 from portfolio_tracking.wallet_data import Wallet
-from portfolio_tracking.yfinance_interface import FILENAME_SUFIX, Asset, Assets, Order, rebuild_assets_structure
+from portfolio_tracking.yfinance_interface import HISTORY_FILENAME_SUFIX, Asset, Order, rebuild_assets_structure, load_assets_json_file, find_asset_by_ticker
 from wallet_app.models import init_db
 
 
-STOCKS_HISTORIES_DIR = Path(__file__).parent / "stocks_histories"
-ASSETS_JSON_FILENAME = "assets.json"
+HISTORIES_DIR_PATH = Path(__file__).parent / "stocks_histories"
+ASSETS_JSONFILE = HISTORIES_DIR_PATH / "assets_real.json"
 
 app = Flask(__name__)
 app.secret_key = "your_secret_key"  #La clé secrète permet de s'assurer que les données stockées dans les cookies ne sont pas altérées par des tiers.
@@ -22,29 +23,6 @@ app.config.from_object("config")
 # Initialiser la base de données avec l'application Flask
 init_db(app)
 
-def load_assets_json_file() -> Assets:
-    """Charge les actifs depuis le fichier JSON
-    et reconstruit l'arboressence en respectant les classes de chaque objet"""
-    assets_jsonfile = STOCKS_HISTORIES_DIR / ASSETS_JSON_FILENAME
-    with open(assets_jsonfile, 'r', encoding='utf-8') as asset_file:
-        assets_data = json.load(asset_file)
-
-    return rebuild_assets_structure(assets_data)
-
-
-def write_assets_json_file(assets):
-    assets_jsonfile = STOCKS_HISTORIES_DIR / ASSETS_JSON_FILENAME
-    with open(assets_jsonfile, 'w', encoding='utf-8') as asset_file:
-        json.dump(assets.to_dict(), asset_file, indent=4)
-
-
-def find_asset_by_ticker(assets: Assets, new_asset: Asset):
-    """Rechercher un actif dans assets avec son ticker"""
-    for asset in assets.assets:
-        if asset.ticker == new_asset.ticker:
-            return True, asset
-    return False, new_asset
-
 
 @app.route('/')
 @app.route('/index/')
@@ -54,8 +32,8 @@ def index():
 
 @app.route('/view_assets/', methods=['GET', 'POST'])
 def view_assets():
-    assets = load_assets_json_file()
-    
+    assets = load_assets_json_file(ASSETS_JSONFILE)
+
     search_result = None
     if request.method == 'POST':
         ticker = request.form['ticker']
@@ -70,40 +48,40 @@ def add_asset():
                       request.form['name'],
                       request.form['ticker'],
                       request.form['broker'],
-                      request.form['devise'])
+                      request.form['currency'])
 
     order_dates = request.form.getlist('order_date')
     order_quantities = request.form.getlist('order_quantity')
     order_prices = request.form.getlist('order_price')
 
     # Charger les actifs existants
-    assets = load_assets_json_file()
+    assets = load_assets_json_file(ASSETS_JSONFILE)
 
     # Mettre à jour ou ajouter l'actif
     already_exist, asset = find_asset_by_ticker(assets, new_asset)
-    
+
     # Ajouter les ordres du formulaire
     orders = []
     for date, quantity, price in zip(order_dates, order_quantities, order_prices):
         orders.append(Order(date, float(quantity), float(price)))
     asset.add_orders(orders)
-    
+
     if not already_exist:
         assets.add_asset(asset)
 
     # Sauvegarder les actifs mis à jour
-    write_assets_json_file(assets)
+    write_assets_json_file(assets, ASSETS_JSONFILE)
 
     return redirect(url_for('view_assets'))
 
 
 @app.route('/dashboard_wallet/')
 def dashboard_wallet():
-        assets = load_assets_json_file()
-        today = date.today()
+        assets = load_assets_json_file(ASSETS_JSONFILE)
+        today = datetime.date.today()
         end_date = today.strftime("%Y-%m-%d")
-        save_dir = STOCKS_HISTORIES_DIR
-        filename_sufix = FILENAME_SUFIX
+        save_dir = HISTORIES_DIR_PATH
+        filename_sufix = HISTORY_FILENAME_SUFIX
         interval = "1d"
         assets.download_histories(end_date=end_date,
                                   save_dir=save_dir,
@@ -115,9 +93,9 @@ def dashboard_wallet():
 
 @app.route('/api/wallet/1')
 def wallet():
-    assets = load_assets_json_file()
-    save_dir = STOCKS_HISTORIES_DIR
-    filename_sufix = FILENAME_SUFIX
+    assets = load_assets_json_file(ASSETS_JSONFILE)
+    save_dir = HISTORIES_DIR_PATH
+    filename_sufix = HISTORY_FILENAME_SUFIX
     assets.load_histories(save_dir=save_dir,
                           filename_sufix=filename_sufix)
 
@@ -125,9 +103,9 @@ def wallet():
     share_value = wallet.get_wallet_share_value(wallet.dates[0], wallet.dates[-1])
     share_value_2, _ = wallet.get_wallet_share_value_2(wallet.dates[0], wallet.dates[-1])
     twrr_cumulated, dates, _ = wallet.get_wallet_TWRR(wallet.dates[0], wallet.dates[-1])
-    
+
     return jsonify({
-      'status': 'ok', 
+      'status': 'ok',
       'wallet': wallet.to_dict(),
       'share_value': share_value,
       'share_value_2': share_value_2,
@@ -137,26 +115,26 @@ def wallet():
 
 @app.route('/api/wallet/valuation')
 def wallet_valuation():
-    assets = load_assets_json_file()
-    save_dir = STOCKS_HISTORIES_DIR
-    filename_sufix = FILENAME_SUFIX
+    assets = load_assets_json_file(ASSETS_JSONFILE)
+    save_dir = HISTORIES_DIR_PATH
+    filename_sufix = HISTORY_FILENAME_SUFIX
     assets.load_histories(save_dir=save_dir,
                           filename_sufix=filename_sufix)
 
     wallet = Wallet(assets)
-    wallet.get_wallet_valuation()
+    wallet.calculate_wallet_valuation()
 
     return jsonify({
-      'status': 'ok', 
+      'status': 'ok',
       'wallet': wallet.to_dict(),
     })
 
 
 @app.route('/api/wallet/share_value')
 def wallet_share_value():
-    assets = load_assets_json_file()
-    save_dir = STOCKS_HISTORIES_DIR
-    filename_sufix = FILENAME_SUFIX
+    assets = load_assets_json_file(ASSETS_JSONFILE)
+    save_dir = HISTORIES_DIR_PATH
+    filename_sufix = HISTORY_FILENAME_SUFIX
     assets.load_histories(save_dir=save_dir,
                           filename_sufix=filename_sufix)
 
@@ -164,7 +142,7 @@ def wallet_share_value():
     share_value = wallet.get_wallet_share_value(wallet.dates[0], wallet.dates[-1])
 
     return jsonify({
-      'status': 'ok', 
+      'status': 'ok',
       'wallet': wallet.to_dict(),
       'share_value': share_value,
     })
@@ -172,9 +150,9 @@ def wallet_share_value():
 
 @app.route('/api/wallet/share_value_2')
 def wallet_share_value_2():
-    assets = load_assets_json_file()
-    save_dir = STOCKS_HISTORIES_DIR
-    filename_sufix = FILENAME_SUFIX
+    assets = load_assets_json_file(ASSETS_JSONFILE)
+    save_dir = HISTORIES_DIR_PATH
+    filename_sufix = HISTORY_FILENAME_SUFIX
     assets.load_histories(save_dir=save_dir,
                           filename_sufix=filename_sufix)
 
@@ -182,7 +160,7 @@ def wallet_share_value_2():
     share_value_2, share_number_2 = wallet.get_wallet_share_value_2(wallet.dates[0], wallet.dates[-1])
 
     return jsonify({
-      'status': 'ok', 
+      'status': 'ok',
       'wallet': wallet.to_dict(),
       'share_value_2': share_value_2,
       'share_number_2': share_number_2,
@@ -191,19 +169,17 @@ def wallet_share_value_2():
 
 @app.route('/api/wallet/TWRR')
 def wallet_TWRR():
-    assets = load_assets_json_file()
-    save_dir = STOCKS_HISTORIES_DIR
-    filename_sufix = FILENAME_SUFIX
+    assets = load_assets_json_file(ASSETS_JSONFILE)
+    save_dir = HISTORIES_DIR_PATH
+    filename_sufix = HISTORY_FILENAME_SUFIX
     assets.load_histories(save_dir=save_dir,
                           filename_sufix=filename_sufix)
 
     wallet = Wallet(assets)
-    start_date = "2020-07-09"
-    end_date = wallet.dates[-1]
-    twrr_cumulated, dates, _ = wallet.get_wallet_TWRR(wallet.dates[wallet.dates.index(start_date)], wallet.dates[wallet.dates.index(end_date)])
+    twrr_cumulated, dates, _ = wallet.get_wallet_TWRR(wallet.dates[0], wallet.dates[-1])
 
     return jsonify({
-      'status': 'ok', 
+      'status': 'ok',
       'dates': dates,
       'twrr_cumulated': twrr_cumulated,
     })
@@ -211,17 +187,44 @@ def wallet_TWRR():
 
 @app.route('/api/stock/')
 def stock():
-    assets = load_assets_json_file()
-    save_dir = STOCKS_HISTORIES_DIR
-    filename_sufix = FILENAME_SUFIX
-    assets.assets[0].load_history(save_dir=save_dir,
+    assets = load_assets_json_file(ASSETS_JSONFILE)
+    save_dir = HISTORIES_DIR_PATH
+    filename_sufix = HISTORY_FILENAME_SUFIX
+    assets.assets[1].load_history(save_dir=save_dir,
                                   filename_sufix=filename_sufix)
 
     return jsonify({
-      'status': 'ok', 
-      'asset': assets.assets[0].to_dict()
+      'status': 'ok',
+      'asset': assets.assets[1].to_dict()
     })
 
+
+@app.route('/api/wallet/2')
+def get_wallet_data():
+    start_date = request.args.get('start', default='2020-01-01')
+    end_date = request.args.get('end', default='2024-12-31')
+    start_date = datetime.strptime(start_date, '%Y-%m-%d')
+    end_date = datetime.strptime(end_date, '%Y-%m-%d')
+
+    # Charger les données depuis une base de données ou un fichier CSV
+    # Pour cet exemple, nous utiliserons des données fictives
+    data = {
+        'dates': pd.date_range(start=start_date, end=end_date).tolist(),
+        'share_value': [100 + i for i in range((end_date - start_date).days + 1)],
+        'share_value_2': [200 + i for i in range((end_date - start_date).days + 1)],
+        'twrr_cumulated': [300 + i for i in range((end_date - start_date).days + 1)]
+    }
+
+    response = {
+        'status': 'ok',
+        'wallet': {
+            'dates': data['dates'],
+            'share_value': data['share_value'],
+            'share_value_2': data['share_value_2'],
+            'twrr_cumulated': data['twrr_cumulated']
+        }
+    }
+    return jsonify(response)
 
 if __name__ == "__main__":
     app.run(debug=True)
