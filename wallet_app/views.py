@@ -5,13 +5,14 @@ from pathlib import Path
 from flask import Flask, jsonify, redirect, render_template, request, session, url_for
 import yfinance as yf
 from .models import save_data_to_database
-from portfolio_tracking.wallet_data import Wallet
-from portfolio_tracking.yfinance_interface import HISTORY_FILENAME_SUFIX, Asset, Order, rebuild_assets_structure, load_assets_json_file, find_asset_by_ticker
+from portfolio_tracking.portfolio_management import Wallet, Asset, Order, rebuild_assets_structure, load_assets_json_file
+from portfolio_tracking.data_downloader import HISTORY_FILENAME_SUFIX
+from portfolio_tracking.utils import find_asset_by_ticker
 from wallet_app.models import init_db
 
 
 HISTORIES_DIR_PATH = Path(__file__).parent / "stocks_histories"
-ASSETS_JSONFILE = HISTORIES_DIR_PATH / "assets_real.json"
+ASSETS_JSONFILE = HISTORIES_DIR_PATH / "assets.json"
 
 app = Flask(__name__)
 app.secret_key = "your_secret_key"  #La clé secrète permet de s'assurer que les données stockées dans les cookies ne sont pas altérées par des tiers.
@@ -32,14 +33,14 @@ def index():
 
 @app.route('/view_assets/', methods=['GET', 'POST'])
 def view_assets():
-    assets = load_assets_json_file(ASSETS_JSONFILE)
+    list_of_assets = load_assets_json_file(ASSETS_JSONFILE)
 
     search_result = None
     if request.method == 'POST':
         ticker = request.form['ticker']
         search_result = yf.Ticker(ticker).info
 
-    return render_template('view_assets.html', assets=assets, search_result=search_result)
+    return render_template('view_assets.html', list_of_assets=list_of_assets, search_result=search_result)
 
 
 @app.route('/add_asset', methods=['POST'])

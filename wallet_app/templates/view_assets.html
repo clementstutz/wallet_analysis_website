@@ -55,13 +55,13 @@
     <table border="1">
         <thead>
             <tr>
-                {% for key in assets.assets[0].to_dict() if key not in ['orders', 'dates', 'closes'] %}
+                {% for key in list_of_assets[0].to_dict() if key not in ['orders', 'dates', 'closes'] %}
                     <th>{{ key }}</th>
                 {% endfor %}
             </tr>
         </thead>
         <tbody>
-            {% for asset in assets.assets %}
+            {% for asset in list_of_assets %}
                 <tr>
                     {% for key, value in asset.to_dict().items() if key not in ['orders', 'dates', 'closes'] %}
                         <td>{{ value }}</td>
