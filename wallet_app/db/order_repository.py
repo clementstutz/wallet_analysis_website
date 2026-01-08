@@ -39,7 +39,7 @@ class SqlAlchemyOrderRepository(OrderRepository):
             query = query.filter(OrderModel.date <= end)
 
         return query.order_by(OrderModel.date).all()
-    
+
     def get_orders_between_dates(self, asset_id, start, end):
         return (
             db.session.query(OrderModel)
@@ -57,3 +57,6 @@ class SqlAlchemyOrderRepository(OrderRepository):
             .scalar()
         )
         return result or 0.0
+
+    def get_last_sell_date(self, asset_id: int):
+        raise NotImplementedError

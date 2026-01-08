@@ -18,14 +18,14 @@ class AssetsModel(db.Model):
     );
     """
     __tablename__ = "assets"
-    
+
     id = db.Column(db.Integer, primary_key=True)
     short_name = db.Column(db.String(255), nullable=False)
     name = db.Column(db.String(255), nullable=False)
     ticker = db.Column(db.String, unique=True, unique=True, nullable=False)
     broker = db.Column(db.String(255))
     currency = db.Column(db.String, nullable=False)
-    
+
     orders = db.relationship("Order", backref="asset")
 
 
@@ -118,7 +118,13 @@ class CurrencyRatesModel(db.Model):
     date_id = db.Column(db.Date, db.ForeignKey("dates.id"))
     open = db.Column(db.Float, nullable=False)
     close = db.Column(db.Float, nullable=False)
-    
+
+
+class Users(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    email = db.Column(db.String(255), nullable=False)
+    password = db.Column(db.String(255), nullable=False)
+
 
 # Initialiser la base de données avec l'application Flask
 def init_db(app):

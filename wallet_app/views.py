@@ -4,11 +4,11 @@ import json
 from pathlib import Path
 from flask import Flask, jsonify, redirect, render_template, request, session, url_for
 import yfinance as yf
-from .models import save_data_to_database
-from portfolio_tracking.portfolio_management import Wallet, Asset, Order, rebuild_assets_structure, load_assets_json_file
-from portfolio_tracking.data_downloader import HISTORY_FILENAME_SUFIX
-from portfolio_tracking.utils import find_asset_by_ticker
-from wallet_app.models import init_db
+from .db.models import save_data_to_database
+from portfolio_tracking.domain.portfolio_management import Wallet, Asset, Order, rebuild_assets_structure, load_assets_json_file
+from portfolio_tracking.domain.data_downloader import HISTORY_FILENAME_SUFIX
+from portfolio_tracking.domain.utils import find_asset_by_ticker, write_assets_json_file
+from wallet_app.db.models import init_db
 
 
 HISTORIES_DIR_PATH = Path(__file__).parent / "stocks_histories"
@@ -56,10 +56,10 @@ def add_asset():
     order_prices = request.form.getlist('order_price')
 
     # Charger les actifs existants
-    assets = load_assets_json_file(ASSETS_JSONFILE)
+    list_of_assets = load_assets_json_file(ASSETS_JSONFILE)
 
     # Mettre à jour ou ajouter l'actif
-    already_exist, asset = find_asset_by_ticker(assets, new_asset)
+    already_exist, asset = find_asset_by_ticker(list_of_assets, new_asset)
 
     # Ajouter les ordres du formulaire
     orders = []
@@ -68,7 +68,7 @@ def add_asset():
     asset.add_orders(orders)
 
     if not already_exist:
-        assets.add_asset(asset)
+        list_of_assets.add_asset(asset)
 
     # Sauvegarder les actifs mis à jour
     write_assets_json_file(assets, ASSETS_JSONFILE)
@@ -226,6 +226,3 @@ def get_wallet_data():
         }
     }
     return jsonify(response)
-
-if __name__ == "__main__":
-    app.run(debug=True)
